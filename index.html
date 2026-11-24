@@ -1204,6 +1204,7 @@
                         <div class="mt-8 flex flex-wrap gap-5 text-xs text-[#666]"><span>● Registered</span><span>● Waitlisted</span><span>● Ready to register</span></div>
                     </section>
                 </div>
+                <div data-obstacle="true" aria-label="UVU stage floor" class="h-6 w-full border-t-4 border-[#8ab833] bg-[#205b37]"></div>
                 <footer data-obstacle="true" class="mt-10 border-t-[35px] border-[#205b37] bg-[#202020] px-5 py-10 text-center text-sm text-white">
                     <div class="font-bold">Utah Valley University</div>
                     <div class="mt-3 text-xs">800 West University Parkway, Orem, Utah &nbsp; • &nbsp; Student Portal</div>
@@ -1517,6 +1518,8 @@
         let gameActive = false;
         let matchMode = 'battle'; // 'battle' (Smash Battle) | 'tag' (UI Tag)
         let arenaMap = 'canvas';  // 'canvas' | 'myuvu' | 'training'
+        let mapCameraManual = false;
+        let lastMapScrollTop = 0;
         let botCount = 2;
         let botUserManuallyToggled = false;
         let hudMinimized = false;
@@ -2069,12 +2072,19 @@
                 attackHit: false,
                 attackMove: 'jab1',
                 walkCycle: 0,
+                targetWalkCycle: 0,
+                hasSyncedWalkCycle: false,
                 scaleX: 1,
                 scaleY: 1,
+                targetScaleX: 1,
+                targetScaleY: 1,
                 tiltAngle: 0,
+                targetTiltAngle: 0,
                 dashTimer: 0,
                 dashCooldown: 0,
                 dashDir: 1,
+                rollSpinAngle: 0,
+                targetRollSpinAngle: 0,
                 aiJumpTimer: 0.2 + Math.random() * 0.4,
                 aiGrappleTimer: 0.5 + Math.random() * 0.6,
                 aiActionTimer: 0.3 + Math.random() * 0.4,
@@ -2287,7 +2297,9 @@
 
             if (arenaMap === 'myuvu') {
                 if (changed) {
+                    mapCameraManual = false;
                     mapMyuvuView.scrollTop = 0;
+                    lastMapScrollTop = 0;
                     window.scrollTo(0, 0);
                 }
                 mapCanvasView.classList.add('hidden');
@@ -2878,6 +2890,7 @@
                 isHost: amIHost,
                 matchMode,
                 arenaMap,
+                mapScroll: arenaMap === 'myuvu' ? mapMyuvuView.scrollTop / Math.max(1, canvas.height) : 0,
                 fighterClass: localRunner.fighterClass,
                 nx: pos.nx,
                 ny: pos.ny,
@@ -2893,6 +2906,18 @@
                 kos: localRunner.kos,
                 attackActive: localRunner.attackTimer > 0,
                 attackMove: localRunner.attackMove,
+                attackTimer: Number(localRunner.attackTimer.toFixed(3)),
+                walkCycle: Number((localRunner.walkCycle % (Math.PI * 2)).toFixed(3)),
+                scaleX: Number(localRunner.scaleX.toFixed(3)),
+                scaleY: Number(localRunner.scaleY.toFixed(3)),
+                tiltAngle: Number(localRunner.tiltAngle.toFixed(3)),
+                rollSpinAngle: Number(localRunner.rollSpinAngle.toFixed(3)),
+                hitFlashTimer: Number(localRunner.hitFlashTimer.toFixed(3)),
+                invulnTimer: Number(localRunner.invulnTimer.toFixed(3)),
+                respawnPlatformTimer: Number(localRunner.respawnPlatformTimer.toFixed(3)),
+                shieldHp: Number(localRunner.shieldHp.toFixed(2)),
+                parryWindow: Number(localRunner.parryWindow.toFixed(3)),
+                crouching: localRunner.crouching,
                 bodyColor: localRunner.bodyColor,
                 scarfColor: localRunner.scarfColor,
                 hatColor: localRunner.hatColor,
@@ -2916,6 +2941,11 @@
             const screenGrapple = data.grappleActive
                 ? fromNormalizedCoords(data.gax, data.gay)
                 : { px: 0, py: 0 };
+            const mapScrollDelta = arenaMap === 'myuvu' && data.arenaMap === 'myuvu' && Number.isFinite(data.mapScroll)
+                ? data.mapScroll * canvas.height - mapMyuvuView.scrollTop
+                : 0;
+            screenPos.py += mapScrollDelta;
+            screenGrapple.py += mapScrollDelta;
 
             let rp = remotePlayers.get(data.id);
             if (!rp) {
@@ -2939,15 +2969,29 @@
             rp.facing = data.facing || 1;
             rp.grounded = !!data.grounded;
             rp.shielding = !!data.shielding;
+            if (Number.isFinite(data.shieldHp)) rp.shieldHp = data.shieldHp;
+            if (Number.isFinite(data.parryWindow)) rp.parryWindow = data.parryWindow;
             rp.isIt = !!data.isIt;
             rp.itChangedAt = data.itChangedAt || 0;
             rp.tagsScored = data.tagsScored || 0;
             rp.damage = data.damage ?? rp.damage;
             rp.kos = data.kos || rp.kos;
-            if (data.attackActive) {
-                rp.attackTimer = 0.16;
-                rp.attackMove = data.attackMove || 'jab1';
+            rp.attackTimer = Number.isFinite(data.attackTimer)
+                ? Math.max(0, data.attackTimer)
+                : (data.attackActive ? 0.16 : 0);
+            if (data.attackActive || data.attackTimer > 0) rp.attackMove = data.attackMove || 'jab1';
+            if (Number.isFinite(data.walkCycle)) {
+                rp.targetWalkCycle = data.walkCycle;
+                rp.hasSyncedWalkCycle = true;
             }
+            if (Number.isFinite(data.scaleX)) rp.targetScaleX = data.scaleX;
+            if (Number.isFinite(data.scaleY)) rp.targetScaleY = data.scaleY;
+            if (Number.isFinite(data.tiltAngle)) rp.targetTiltAngle = data.tiltAngle;
+            if (Number.isFinite(data.rollSpinAngle)) rp.targetRollSpinAngle = data.rollSpinAngle;
+            if (Number.isFinite(data.hitFlashTimer)) rp.hitFlashTimer = Math.max(0, data.hitFlashTimer);
+            if (Number.isFinite(data.invulnTimer)) rp.invulnTimer = Math.max(0, data.invulnTimer);
+            if (Number.isFinite(data.respawnPlatformTimer)) rp.respawnPlatformTimer = Math.max(0, data.respawnPlatformTimer);
+            if (typeof data.crouching === 'boolean') rp.crouching = data.crouching;
             rp.bodyColor = data.bodyColor || rp.bodyColor;
             rp.scarfColor = data.scarfColor || rp.scarfColor;
             rp.hatColor = data.hatColor || rp.hatColor;
@@ -3468,6 +3512,8 @@
                     triggerMovementSignature(localRunner);
                 }
             }
+
+            if (arenaMap === 'myuvu') mapCameraManual = false;
 
             if (localRunner.shielding && localRunner.grounded) {
                 if (action === 'moveLeft') triggerShieldRoll(localRunner, -1);
@@ -4176,11 +4222,18 @@
         }
 
         function updateMapCamera() {
-            if (!gameActive || arenaMap !== 'myuvu' || mapMyuvuView.classList.contains('hidden')) return false;
+            if (!gameActive || arenaMap !== 'myuvu' || mapCameraManual || mapMyuvuView.classList.contains('hidden')) return false;
             const maxScroll = Math.max(0, mapMyuvuView.scrollHeight - mapMyuvuView.clientHeight);
             const target = mapMyuvuView.scrollTop + localRunner.y + localRunner.h / 2 - canvas.height / 2;
             const nextScroll = Math.max(0, Math.min(maxScroll, target));
             if (Math.abs(nextScroll - mapMyuvuView.scrollTop) < 0.25) return false;
+            const scrollDelta = nextScroll - mapMyuvuView.scrollTop;
+            for (const rp of remotePlayers.values()) {
+                rp.y -= scrollDelta;
+                rp.targetY -= scrollDelta;
+                if (rp.grapple.active) rp.grapple.ay -= scrollDelta;
+            }
+            lastMapScrollTop = nextScroll;
             mapMyuvuView.scrollTop = nextScroll;
             return true;
         }
@@ -4226,6 +4279,8 @@
 
         function startUiTag() {
             gameActive = true;
+            mapCameraManual = false;
+            lastMapScrollTop = mapMyuvuView.scrollTop;
             window.dispatchEvent(new Event('gameactivechange'));
             secretTrigger.classList.add('active-game');
             if (myuvuSecretTrigger) myuvuSecretTrigger.classList.add('active-game');
@@ -4304,6 +4359,28 @@
                 scanDomPlatforms();
             }
         }, true);
+
+        mapMyuvuView.addEventListener('wheel', () => {
+            if (gameActive) mapCameraManual = true;
+        }, { passive: true });
+        mapMyuvuView.addEventListener('pointerdown', (event) => {
+            const rect = mapMyuvuView.getBoundingClientRect();
+            if (gameActive && event.clientX >= rect.right - 12) mapCameraManual = true;
+        });
+        mapMyuvuView.addEventListener('scroll', () => {
+            const scrollTop = mapMyuvuView.scrollTop;
+            const scrollDelta = scrollTop - lastMapScrollTop;
+            lastMapScrollTop = scrollTop;
+            if (gameActive && mapCameraManual && Math.abs(scrollDelta) >= 0.25) {
+                const entities = [localRunner, ...cpuBots, ...trainingDummies, ...remotePlayers.values()];
+                for (const entity of entities) {
+                    entity.y -= scrollDelta;
+                    if (entity.grapple.active) entity.grapple.ay -= scrollDelta;
+                    if (entity.targetY !== undefined) entity.targetY -= scrollDelta;
+                }
+            }
+            if (gameActive) scanDomPlatforms();
+        });
 
         function updateHud() {
             if (matchMode === 'battle') {
@@ -5451,7 +5528,23 @@
                 rp.y += (rp.targetY - rp.y) * lerpFactor;
 
                 if (rp.attackTimer > 0) rp.attackTimer -= dt;
-                if (rp.grounded && Math.abs(rp.vx) > 15) {
+                if (rp.hitFlashTimer > 0) rp.hitFlashTimer = Math.max(0, rp.hitFlashTimer - dt);
+                if (rp.invulnTimer > 0) rp.invulnTimer = Math.max(0, rp.invulnTimer - dt);
+                if (rp.parryWindow > 0) rp.parryWindow = Math.max(0, rp.parryWindow - dt);
+                if (rp.respawnPlatformTimer > 0) rp.respawnPlatformTimer = Math.max(0, rp.respawnPlatformTimer - dt);
+
+                rp.scaleX += (rp.targetScaleX - rp.scaleX) * lerpFactor;
+                rp.scaleY += (rp.targetScaleY - rp.scaleY) * lerpFactor;
+                rp.tiltAngle += (rp.targetTiltAngle - rp.tiltAngle) * lerpFactor;
+                rp.rollSpinAngle += (rp.targetRollSpinAngle - rp.rollSpinAngle) * lerpFactor;
+
+                if (rp.hasSyncedWalkCycle) {
+                    const cycleDelta = Math.atan2(
+                        Math.sin(rp.targetWalkCycle - rp.walkCycle),
+                        Math.cos(rp.targetWalkCycle - rp.walkCycle)
+                    );
+                    rp.walkCycle = (rp.walkCycle + cycleDelta * lerpFactor + Math.PI * 2) % (Math.PI * 2);
+                } else if (rp.grounded && Math.abs(rp.vx) > 15) {
                     rp.walkCycle += Math.abs(rp.vx) * dt * 0.085;
                 } else {
                     rp.walkCycle = 0;
@@ -5462,6 +5555,7 @@
         function drawRunner(r, tagLabel = null, isLocal = false) {
             const x = Math.round(r.x);
             const y = Math.round(r.y);
+            const animationClock = Date.now();
 
             if (r.grapple.active) {
                 ctx.save();
@@ -5481,7 +5575,7 @@
 
             if (r.respawnPlatformTimer > 0) {
                 ctx.save();
-                const platPulse = 0.7 + Math.sin(performance.now() * 0.014) * 0.25;
+                const platPulse = 0.7 + Math.sin(animationClock * 0.014) * 0.25;
                 ctx.globalAlpha = platPulse;
                 ctx.fillStyle = '#2d3b45';
                 ctx.beginPath();
@@ -5499,7 +5593,7 @@
             // Golden IT aura ONLY in UI Tag mode
             if (matchMode === 'tag' && r.isIt) {
                 ctx.save();
-                const pulse = 13 + Math.sin(performance.now() * 0.012) * 3;
+                const pulse = 13 + Math.sin(animationClock * 0.012) * 3;
                 ctx.strokeStyle = 'rgba(245, 158, 11, 0.75)';
                 ctx.lineWidth = 2;
                 ctx.beginPath();
@@ -5539,7 +5633,7 @@
             }
 
             ctx.fillStyle = r.scarfColor;
-            const scarfWave = Math.sin(performance.now() * 0.015 + x * 0.05) * 2.5;
+            const scarfWave = Math.sin(animationClock * 0.015 + x * 0.05) * 2.5;
             const scarfX = r.facing === 1 ? x - 4 : x + r.w - 1;
             ctx.fillRect(scarfX, y + 6 + scarfWave * 0.4, 5, 3);
 

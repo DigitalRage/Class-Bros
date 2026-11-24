@@ -27,6 +27,6 @@ Tracks are read from `assets/music/`. The game attempts to discover MP3s from a 
 
 - Fighters have distinct movement abilities, specials, shields, dodges, and Smash-style combat.
 - Solid surfaces, walls, and slopes have collision; semisolid platforms can be dropped through.
-- The myUVU portal stage scrolls vertically to keep the player near the center of the view.
-- Remote player positions are interpolated, and Tag/Fight modes use separate room channels.
+- The myUVU portal stage scrolls vertically to keep the player near the center of the view; manual scrolling is also supported, with a floor at the bottom of the stage.
+- Remote player positions and animation states are synchronized, and Tag/Fight modes use separate room channels.
 - The HUD includes fighter selection, host stage/mode controls, rooms, player customization, and training dummy reset.
