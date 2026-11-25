@@ -160,15 +160,15 @@
 
     <!-- SECRET GAME OVERLAY CANVAS -->
     <canvas id="ui-tag-canvas"></canvas>
-    <aside id="adventure-hud" class="hidden fixed top-3 left-3 z-[9998] w-[min(19rem,calc(100vw-1.5rem))] rounded-2xl border border-emerald-200 bg-slate-950/85 p-3 text-white shadow-xl backdrop-blur-md" aria-live="polite">
+    <aside id="adventure-hud" class="hidden fixed top-3 left-3 z-[9998] w-[min(19rem,calc(100vw-1.5rem))] rounded-2xl border border-sky-200 bg-slate-950/85 p-3 text-white shadow-xl backdrop-blur-md" aria-live="polite">
         <div class="flex items-center justify-between gap-2">
-            <p class="text-xs font-black uppercase tracking-[0.18em] text-amber-300">Wayfinder Quest</p>
-            <span id="adventure-progress" class="rounded-full bg-emerald-400/20 px-2 py-0.5 text-[10px] font-bold text-emerald-200">0 / 5</span>
+            <p class="text-xs font-black uppercase tracking-[0.18em] text-sky-300">Campus Quest</p>
+            <span id="adventure-progress" class="rounded-full bg-sky-400/20 px-2 py-0.5 text-[10px] font-bold text-sky-200">0 / 5</span>
         </div>
-        <p id="adventure-objective" class="mt-1 text-sm font-bold">Find 5 starlight shards</p>
-        <p id="adventure-hint" class="mt-1 text-[11px] text-slate-300">Explore the realms and meet the Wayfinder.</p>
+        <p id="adventure-objective" class="mt-1 text-sm font-bold">Collect 5 class badges</p>
+        <p id="adventure-hint" class="mt-1 text-[11px] text-slate-300">Explore the sites and visit the Help Desk.</p>
         <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-white/15">
-            <div id="adventure-progress-bar" class="h-full w-0 rounded-full bg-amber-300 transition-all"></div>
+            <div id="adventure-progress-bar" class="h-full w-0 rounded-full bg-sky-300 transition-all"></div>
         </div>
         <p class="mt-2 text-[10px] text-slate-400">A / D explore · Space jump · E interact</p>
     </aside>
@@ -1526,13 +1526,13 @@
             tag: 'UI Tag',
             adventure: 'Adventure'
         };
-        const WORLD_REGION_NAMES = ['Sunmeadow Forest', 'Prismdeep Caverns', 'Emberfall Peaks', 'Cloudreach Isles', 'Moonbloom Vale'];
+        const WORLD_REGION_NAMES = ['Canvas Courses', 'myUVU Portal', 'GitHub Campus', 'Aspire Learning', 'Class Directory'];
         const WORLD_REGION_COLORS = [
-            { skyTop: '#62b8fa', skyBottom: '#d7f4e3', ground: '#386b43', accent: '#d9f36a', detail: '#a8dd8b', far: '#568aa4', kind: 'forest' },
-            { skyTop: '#211d54', skyBottom: '#6e4da0', ground: '#43376c', accent: '#7df9e5', detail: '#b7a3ef', far: '#7765ad', kind: 'crystal' },
-            { skyTop: '#ed7862', skyBottom: '#ffd08a', ground: '#82423e', accent: '#ffd166', detail: '#f49458', far: '#a85757', kind: 'volcano' },
-            { skyTop: '#72c7f5', skyBottom: '#e4e6ff', ground: '#5676a7', accent: '#ffe2ff', detail: '#c4e7ff', far: '#93a8ce', kind: 'cloud' },
-            { skyTop: '#171d49', skyBottom: '#465886', ground: '#314653', accent: '#9cf6c1', detail: '#a9bbff', far: '#58658d', kind: 'moon' }
+            { page: '#f4f6f8', header: '#ffffff', panel: '#ffffff', border: '#c7cdd1', accent: '#d33b3b', secondary: '#1c5c43', text: '#2d3b45', muted: '#71808a', dark: false },
+            { page: '#f3f7f4', header: '#ffffff', panel: '#ffffff', border: '#d5e0d9', accent: '#00843d', secondary: '#123e2d', text: '#263b30', muted: '#6d7e73', dark: false },
+            { page: '#0d1117', header: '#161b22', panel: '#161b22', border: '#30363d', accent: '#58a6ff', secondary: '#3fb950', text: '#e6edf3', muted: '#8b949e', dark: true },
+            { page: '#f2f5fa', header: '#263652', panel: '#ffffff', border: '#d9e1eb', accent: '#20a6a6', secondary: '#f0a838', text: '#26364c', muted: '#718096', dark: false },
+            { page: '#f0f2f5', header: '#ffffff', panel: '#ffffff', border: '#d6dbe2', accent: '#6558c8', secondary: '#ed9b42', text: '#303847', muted: '#788292', dark: false }
         ];
         const WORLD_WIDTH_VIEWPORTS = 25;
         const WORLD_HEIGHT_VIEWPORTS = 8;
@@ -1564,7 +1564,6 @@
         let worldCameraY = 0;
         let worldLandmarks = [];
         let worldFragments = [];
-        let worldDecorations = [];
         let worldPlatforms = [];
         let worldFragmentCount = 0;
         const visitedWorldRegions = new Set();
@@ -4242,91 +4241,70 @@
         function initializeOpenWorld() {
             worldWidth = Math.round(canvas.width * WORLD_WIDTH_VIEWPORTS);
             worldHeight = Math.round(canvas.height * WORLD_HEIGHT_VIEWPORTS);
-            worldFloorY = worldHeight - canvas.height * 0.3;
+            worldFloorY = worldHeight - canvas.height * 0.2;
             const floorY = worldFloorY;
+            const startY = floorY - canvas.height * 0.16;
+            const rowGap = canvas.height * 0.2;
             const regionWidth = worldWidth / WORLD_REGION_NAMES.length;
             const list = [];
             const collectedBeforeResize = worldFragments.map(fragment => fragment.collected);
             worldLandmarks = [];
             worldFragments = [];
-            worldDecorations = [];
 
             for (let region = 0; region < WORLD_REGION_NAMES.length; region++) {
                 const startX = region * regionWidth;
                 const colors = WORLD_REGION_COLORS[region];
-                list.push({
-                    x: startX,
-                    y: floorY,
-                    w: regionWidth + 1,
-                    h: 24,
-                    type: 'world-ground',
-                    color: colors.ground,
-                    accent: colors.accent
-                });
+                for (let groundX = startX; groundX < startX + regionWidth; groundX += canvas.width * 0.58) {
+                    list.push({
+                        x: groundX,
+                        y: floorY,
+                        w: Math.min(canvas.width * 0.39, startX + regionWidth - groundX),
+                        h: 18,
+                        type: 'world-ground',
+                        color: colors.panel,
+                        accent: colors.accent
+                    });
+                }
                 worldLandmarks.push({
                     name: WORLD_REGION_NAMES[region],
-                    x: startX + regionWidth * 0.5,
-                    y: floorY - 38,
+                    x: startX + regionWidth * (region === WORLD_REGION_NAMES.length - 1 ? 0.9 : 0.5),
+                    y: floorY - 34,
                     color: colors.accent,
                     visited: false
                 });
-
-                const ledgeCount = Math.ceil(regionWidth / canvas.width * 9);
-                for (let step = 0; step < ledgeCount; step++) {
-                    const progress = (step + 0.5) / ledgeCount;
-                    const x = startX + progress * regionWidth;
-                    const wave = 0.5 + 0.5 * Math.sin(step * 0.42 + region * 1.7);
-                    const elevation = canvas.height * (0.05 + wave * 0.14);
-                    list.push({
-                        x,
-                        y: floorY - elevation,
-                        w: 112 + ((step + region) % 4) * 18,
-                        h: 12 + ((step + region) % 3) * 3,
-                        type: 'world-ledge',
-                        color: colors.ground,
-                        accent: colors.accent
-                    });
-                }
-
-                const islandCount = Math.max(3, Math.round(regionWidth / canvas.width * 0.8));
-                for (let island = 0; island < islandCount; island++) {
-                    const progress = (island + 0.5) / islandCount;
-                    const x = startX + progress * regionWidth;
-                    const elevation = canvas.height * (0.42 + 0.08 * Math.sin(island * 1.9 + region));
-                    list.push({
-                        x,
-                        y: floorY - elevation,
-                        w: 205 + (island % 2) * 65,
-                        h: 18,
-                        type: 'world-island',
-                        color: colors.far,
-                        accent: colors.accent
-                    });
-                }
 
                 const fragmentPositions = [0.12, 0.31, 0.69, 0.88];
                 for (let fragment = 0; fragment < fragmentPositions.length; fragment++) {
                     const x = startX + regionWidth * fragmentPositions[fragment];
                     const fragmentIndex = region * fragmentPositions.length + fragment;
+                    const tier = 3 + ((region * 7 + fragment * 9) % 33);
                     worldFragments.push({
                         x,
-                        y: floorY - 42,
+                        y: startY - tier * rowGap - 28,
                         color: colors.accent,
                         collected: !!collectedBeforeResize[fragmentIndex]
                     });
                 }
+            }
 
-                for (let prop = 0; prop < 22; prop++) {
-                    const progress = (prop + 0.35 + (region % 2) * 0.3) / 22;
-                    const size = 28 + Math.abs(Math.sin(prop * 2.13 + region)) * 55;
-                    worldDecorations.push({
-                        x: startX + progress * regionWidth,
-                        y: floorY,
-                        size,
-                        kind: colors.kind,
-                        variant: (prop + region) % 4,
-                        color: colors.accent,
-                        detail: colors.detail
+            const pitch = canvas.width * 0.34;
+            const tierCount = Math.floor((startY - canvas.height * 0.14) / rowGap);
+            const columnCount = Math.ceil(worldWidth / pitch);
+            for (let tier = 1; tier <= tierCount; tier++) {
+                for (let column = 0; column < columnCount; column++) {
+                    const offset = tier % 2 ? pitch * 0.35 : 0;
+                    const x = column * pitch + offset;
+                    if (x + canvas.width * 0.16 >= worldWidth) continue;
+                    const region = Math.min(WORLD_REGION_NAMES.length - 1, Math.floor(x / regionWidth));
+                    const colors = WORLD_REGION_COLORS[region];
+                    list.push({
+                        x,
+                        y: startY - tier * rowGap - ((column + tier) % 3) * canvas.height * 0.008,
+                        w: canvas.width * (0.16 + ((column + tier) % 3) * 0.025),
+                        h: 14,
+                        type: 'world-ledge',
+                        color: colors.panel,
+                        accent: colors.accent
                     });
                 }
             }
@@ -4343,23 +4321,23 @@
             if (worldFragmentCount < ADVENTURE_FRAGMENT_GOAL) {
                 adventureProgress.textContent = `${worldFragmentCount} / ${ADVENTURE_FRAGMENT_GOAL}`;
                 adventureProgressBar.style.width = `${worldFragmentCount / ADVENTURE_FRAGMENT_GOAL * 100}%`;
-                adventureObjective.textContent = `Find ${ADVENTURE_FRAGMENT_GOAL} starlight shards`;
-                adventureHint.textContent = `${worldFragmentCount} found · follow the glowing trail`;
+                adventureObjective.textContent = `Collect ${ADVENTURE_FRAGMENT_GOAL} class badges`;
+                adventureHint.textContent = `${worldFragmentCount} found · look for badge cards`;
             } else if (regionsVisited < WORLD_REGION_VISITS_GOAL) {
                 adventureProgress.textContent = `${regionsVisited} / ${WORLD_REGION_VISITS_GOAL}`;
                 adventureProgressBar.style.width = `${regionsVisited / WORLD_REGION_VISITS_GOAL * 100}%`;
-                adventureObjective.textContent = 'Journey through every realm';
-                adventureHint.textContent = `${regionsVisited} / ${WORLD_REGION_VISITS_GOAL} realms discovered`;
+                adventureObjective.textContent = 'Visit every site';
+                adventureHint.textContent = `${regionsVisited} / ${WORLD_REGION_VISITS_GOAL} sites opened`;
             } else if (!adventureComplete) {
                 adventureProgress.textContent = 'READY';
                 adventureProgressBar.style.width = '100%';
-                adventureObjective.textContent = 'Find the Wayfinder';
-                adventureHint.textContent = 'Meet the glowing traveler in Moonbloom Vale · press E';
+                adventureObjective.textContent = 'Find the Help Desk';
+                adventureHint.textContent = 'Reach the Help Desk in the Class Directory · press E';
             } else {
                 adventureProgress.textContent = 'DONE';
                 adventureProgressBar.style.width = '100%';
-                adventureObjective.textContent = 'Quest complete — the Starway shines!';
-                adventureHint.textContent = 'The realms are connected. Keep exploring!';
+                adventureObjective.textContent = 'Quest complete — dashboard unlocked!';
+                adventureHint.textContent = 'All sites explored. Keep platforming!';
             }
         }
 
@@ -4375,7 +4353,7 @@
                     fragment.collected = true;
                     worldFragmentCount++;
                     spawnParticles(fragment.x, fragment.y, fragment.color, 12);
-                    showCanvasToast(`Starlight shard found! (${worldFragmentCount}/${ADVENTURE_FRAGMENT_GOAL})`);
+                    showCanvasToast(`Class badge found! (${worldFragmentCount}/${ADVENTURE_FRAGMENT_GOAL})`);
                     updateAdventureHud();
                 }
             }
@@ -4390,19 +4368,19 @@
                 localRunner.y + localRunner.h / 2 - wayfinder.y
             );
             if (distance > 68) {
-                showCanvasToast('Keep traveling east to find the Wayfinder.');
+                showCanvasToast('Keep exploring the Class Directory to find the Help Desk.');
                 return;
             }
             if (worldFragmentCount < ADVENTURE_FRAGMENT_GOAL || visitedWorldRegions.size < WORLD_REGION_VISITS_GOAL) {
-                showCanvasToast('The Wayfinder needs five shards and all five realms explored.');
+                showCanvasToast('The Help Desk needs five class badges and all five sites visited.');
                 return;
             }
             if (!adventureComplete) {
                 adventureComplete = true;
-                showCanvasToast('Quest complete! You restored the Starway!');
+                showCanvasToast('Quest complete! You found your way through the sites!');
                 updateAdventureHud();
             } else {
-                showCanvasToast('The Starway is restored. Thanks, explorer!');
+                showCanvasToast('The Help Desk is open. Keep exploring!');
             }
         }
 
@@ -4414,287 +4392,226 @@
             worldCameraY += (Math.max(0, Math.min(worldHeight - canvas.height, targetY)) - worldCameraY) * 0.12;
         }
 
-        function drawWorldRidge(x, width, baseY, height, color, seed, segments = 18) {
-            ctx.beginPath();
-            ctx.moveTo(x, baseY);
-            for (let i = 0; i <= segments; i++) {
-                const progress = i / segments;
-                const peak = Math.abs(Math.sin((i + seed) * 1.71)) * 0.55
-                    + Math.abs(Math.sin((i + seed * 2) * 0.63)) * 0.45;
-                ctx.lineTo(x + progress * width, baseY - peak * height);
-            }
-            ctx.lineTo(x + width, worldHeight);
-            ctx.lineTo(x, worldHeight);
-            ctx.closePath();
-            ctx.fillStyle = color;
-            ctx.fill();
-        }
-
-        function drawWorldDecoration(decoration) {
-            const { x, y, size, kind, color, detail, variant } = decoration;
-            ctx.save();
-
-            if (kind === 'forest') {
-                ctx.fillStyle = '#79563b';
-                ctx.fillRect(x - size * 0.08, y - size * 0.62, size * 0.16, size * 0.62);
-                ctx.fillStyle = variant % 2 ? '#4f9a58' : '#68ad5d';
-                for (let tier = 0; tier < 3; tier++) {
-                    ctx.beginPath();
-                    ctx.arc(x, y - size * (0.53 + tier * 0.22), size * (0.34 - tier * 0.045), 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                ctx.fillStyle = detail;
-                ctx.beginPath();
-                ctx.arc(x + size * 0.2, y - size * 0.55, size * 0.055, 0, Math.PI * 2);
-                ctx.fill();
-            } else if (kind === 'crystal') {
-                for (let shard = 0; shard < 3; shard++) {
-                    const shardX = x + (shard - 1) * size * 0.22;
-                    const shardH = size * (0.55 + ((shard + variant) % 3) * 0.18);
-                    ctx.beginPath();
-                    ctx.moveTo(shardX - size * 0.11, y);
-                    ctx.lineTo(shardX - size * 0.08, y - shardH * 0.76);
-                    ctx.lineTo(shardX, y - shardH);
-                    ctx.lineTo(shardX + size * 0.12, y - shardH * 0.66);
-                    ctx.lineTo(shardX + size * 0.11, y);
-                    ctx.closePath();
-                    ctx.fillStyle = shard % 2 ? color : detail;
-                    ctx.fill();
-                    ctx.strokeStyle = 'rgba(255,255,255,0.72)';
-                    ctx.lineWidth = 1.5;
-                    ctx.stroke();
-                }
-            } else if (kind === 'volcano') {
-                ctx.fillStyle = variant % 2 ? '#653d48' : '#75424a';
-                ctx.beginPath();
-                ctx.moveTo(x - size * 0.55, y);
-                ctx.lineTo(x - size * 0.27, y - size * 0.56);
-                ctx.lineTo(x - size * 0.07, y - size * 0.4);
-                ctx.lineTo(x + size * 0.16, y - size * 0.72);
-                ctx.lineTo(x + size * 0.53, y);
-                ctx.closePath();
-                ctx.fill();
-                ctx.strokeStyle = color;
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.moveTo(x - size * 0.08, y - size * 0.38);
-                ctx.lineTo(x + size * 0.04, y - size * 0.16);
-                ctx.lineTo(x + size * 0.23, y - size * 0.08);
-                ctx.stroke();
-                ctx.fillStyle = '#ffd166';
-                ctx.beginPath();
-                ctx.arc(x + size * 0.17, y - size * 0.66, size * 0.07, 0, Math.PI * 2);
-                ctx.fill();
-            } else if (kind === 'cloud') {
-                ctx.fillStyle = 'rgba(238,247,255,0.9)';
-                for (let puff = 0; puff < 4; puff++) {
-                    ctx.beginPath();
-                    ctx.arc(x + (puff - 1.5) * size * 0.2, y - size * (0.28 + (puff % 2) * 0.1), size * 0.22, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                ctx.fillStyle = color;
-                ctx.fillRect(x - size * 0.035, y - size * 0.55, size * 0.07, size * 0.53);
-                ctx.beginPath();
-                ctx.moveTo(x, y - size * 0.62);
-                ctx.lineTo(x - size * 0.32, y - size * 0.4);
-                ctx.lineTo(x, y - size * 0.48);
-                ctx.lineTo(x + size * 0.32, y - size * 0.4);
-                ctx.closePath();
-                ctx.fill();
-            } else {
-                ctx.fillStyle = '#51715c';
-                ctx.fillRect(x - size * 0.07, y - size * 0.4, size * 0.14, size * 0.4);
-                ctx.fillStyle = variant % 2 ? '#e5a2d0' : '#bb9cff';
-                ctx.beginPath();
-                ctx.ellipse(x, y - size * 0.43, size * 0.33, size * 0.19, 0, Math.PI, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = detail;
-                for (let spot = -1; spot <= 1; spot++) {
-                    ctx.beginPath();
-                    ctx.arc(x + spot * size * 0.15, y - size * 0.46, size * 0.035, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                ctx.fillStyle = 'rgba(156,246,193,0.42)';
-                ctx.beginPath();
-                ctx.ellipse(x, y - size * 0.08, size * 0.48, size * 0.08, 0, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            ctx.restore();
-        }
-
         function drawOpenWorld() {
             const regionWidth = worldWidth / WORLD_REGION_NAMES.length;
-            const visibleLeft = worldCameraX - regionWidth;
-            const visibleRight = worldCameraX + canvas.width + regionWidth;
+            const visibleLeft = worldCameraX - canvas.width * 0.2;
+            const visibleRight = worldCameraX + canvas.width * 1.2;
+            const firstPage = Math.max(0, Math.floor(worldCameraY / canvas.height) - 1);
+            const lastPage = Math.min(WORLD_HEIGHT_VIEWPORTS - 1, Math.ceil((worldCameraY + canvas.height) / canvas.height));
+            const pageTitles = [
+                ['Dashboard', 'Course Modules', 'Assignments', 'Grades', 'People', 'Discussions', 'Quizzes', 'Course Home'],
+                ['Student Portal', 'My Classes', 'Registration', 'Degree Progress', 'Financial Aid', 'Campus Services', 'Student Life', 'Portal Home'],
+                ['Repositories', 'Pull Requests', 'Issues', 'Projects', 'Actions', 'Discussions', 'Security', 'GitHub Campus'],
+                ['Learning Paths', 'My Courses', 'Skill Builder', 'Programs', 'Assessments', 'Resources', 'Progress', 'Aspire Home'],
+                ['Browse Classes', 'Recently Added', 'Popular Courses', 'Study Groups', 'Saved Classes', 'Recommendations', 'Events', 'Class Directory']
+            ];
+            const cardTitles = [
+                ['Biology 1010', 'English 11A', 'Web Development', 'Government CE', 'Speech & Debate', 'Study Group', 'Upcoming Work', 'Course Files', 'Class Calendar', 'Recent Feedback', 'Announcements'],
+                ['My Classes', 'Degree Planner', 'Tuition & Aid', 'Registration', 'Campus Events', 'Student Jobs', 'Library Search', 'Advising', 'Account Tools', 'Financial Aid', 'Campus Map'],
+                ['class-bros/game', 'Open issues', 'Pull requests', 'Latest commits', 'Project board', 'Actions run', 'Code review', 'Discussions', 'Campus repos', 'Your activity', 'Starred repos'],
+                ['Algebra Foundations', 'Design Studio', 'Learning Path', 'Weekly Goals', 'Skill Check', 'Practice Set', 'Class Resources', 'My Progress', 'Study Plan', 'Achievements', 'Help Center'],
+                ['Math & Science', 'Arts & Media', 'Computer Science', 'Humanities', 'New Classes', 'Popular Now', 'Saved for Later', 'Study Groups', 'Recommended', 'Sort & Filter', 'Browse All']
+            ];
+            const sidebarItems = ['Home', 'Classes', 'Calendar', 'Messages', 'Resources', 'Help'];
 
             for (let region = 0; region < WORLD_REGION_NAMES.length; region++) {
                 const x = region * regionWidth;
                 const colors = WORLD_REGION_COLORS[region];
                 if (x + regionWidth < visibleLeft || x > visibleRight) continue;
 
-                const sky = ctx.createLinearGradient(0, 0, 0, worldFloorY);
-                sky.addColorStop(0, colors.skyTop);
-                sky.addColorStop(1, colors.skyBottom);
-                ctx.fillStyle = sky;
+                ctx.fillStyle = colors.page;
                 ctx.fillRect(x, 0, regionWidth, worldHeight);
 
-                const orbX = x + regionWidth * 0.78;
-                const orbY = worldFloorY - canvas.height * 0.34;
-                ctx.fillStyle = region === 4 ? 'rgba(220,234,255,0.9)' : 'rgba(255,241,190,0.88)';
-                ctx.beginPath();
-                ctx.arc(orbX, orbY, canvas.height * 0.075, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = 'rgba(255,255,255,0.22)';
-                ctx.beginPath();
-                ctx.arc(orbX - canvas.height * 0.025, orbY - canvas.height * 0.025, canvas.height * 0.075, 0, Math.PI * 2);
-                ctx.fill();
+                for (let page = firstPage; page <= lastPage; page++) {
+                    const pageY = page * canvas.height;
+                    const navHeight = Math.max(46, canvas.height * 0.07);
+                    const sidebarWidth = canvas.width * 0.13;
+                    const titleY = pageY + canvas.height * 0.14;
 
-                if (region === 1 || region === 4) {
-                    ctx.fillStyle = 'rgba(255,255,255,0.82)';
-                    for (let star = 0; star < 34; star++) {
-                        const starX = x + ((star * 197 + region * 89) % Math.max(1, regionWidth));
-                        const starY = worldFloorY - canvas.height * (0.12 + ((star * 73) % 78) / 100);
-                        const radius = 1 + (star % 3) * 0.55;
-                        ctx.beginPath();
-                        ctx.arc(starX, starY, radius, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
-                }
-
-                for (let cloud = 0; cloud < 6; cloud++) {
-                    const cloudX = x + 120 + cloud * (regionWidth / 6);
-                    const cloudY = worldFloorY - canvas.height * (0.2 + ((cloud * 17 + region * 11) % 45) / 100);
-                    ctx.fillStyle = 'rgba(255,255,255,0.28)';
+                    ctx.fillStyle = colors.header;
+                    ctx.fillRect(x, pageY, regionWidth, navHeight);
+                    ctx.fillStyle = colors.border;
+                    ctx.fillRect(x, pageY + navHeight - 1, regionWidth, 1);
+                    ctx.fillStyle = colors.accent;
                     ctx.beginPath();
-                    ctx.ellipse(cloudX, cloudY, canvas.height * 0.08, canvas.height * 0.018, 0, 0, Math.PI * 2);
-                    ctx.ellipse(cloudX + canvas.height * 0.045, cloudY - canvas.height * 0.015, canvas.height * 0.052, canvas.height * 0.024, 0, 0, Math.PI * 2);
+                    ctx.roundRect(x + 18, pageY + navHeight * 0.22, navHeight * 0.55, navHeight * 0.55, 8);
                     ctx.fill();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = `900 ${Math.max(14, navHeight * 0.34)}px Lato, sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText(region === 2 ? '>' : WORLD_REGION_NAMES[region].charAt(0), x + 18 + navHeight * 0.275, pageY + navHeight * 0.59);
+                    ctx.textAlign = 'left';
+                    ctx.fillStyle = colors.text;
+                    ctx.font = `900 ${Math.max(14, navHeight * 0.27)}px Lato, sans-serif`;
+                    ctx.fillText(WORLD_REGION_NAMES[region], x + navHeight + 22, pageY + navHeight * 0.58);
+
+                    const searchX = x + canvas.width * 1.55;
+                    const searchW = canvas.width * 1.25;
+                    ctx.fillStyle = colors.page;
+                    ctx.beginPath();
+                    ctx.roundRect(searchX, pageY + navHeight * 0.22, searchW, navHeight * 0.56, 9);
+                    ctx.fill();
+                    ctx.strokeStyle = colors.border;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    ctx.fillStyle = colors.muted;
+                    ctx.font = `600 ${Math.max(10, navHeight * 0.17)}px Lato, sans-serif`;
+                    ctx.fillText(region === 2 ? 'Search or jump to...' : 'Search classes, people, and resources', searchX + 14, pageY + navHeight * 0.57);
+
+                    ctx.fillStyle = colors.header;
+                    ctx.fillRect(x, pageY + navHeight, sidebarWidth, canvas.height - navHeight);
+                    ctx.fillStyle = colors.border;
+                    ctx.fillRect(x + sidebarWidth, pageY + navHeight, 1, canvas.height - navHeight);
+                    for (let item = 0; item < sidebarItems.length; item++) {
+                        const itemY = pageY + canvas.height * (0.13 + item * 0.055);
+                        const active = item === (page + region) % sidebarItems.length;
+                        if (active) {
+                            ctx.fillStyle = colors.accent;
+                            ctx.globalAlpha = 0.12;
+                            ctx.fillRect(x + 9, itemY - 16, sidebarWidth - 18, 30);
+                            ctx.globalAlpha = 1;
+                            ctx.fillStyle = colors.accent;
+                            ctx.fillRect(x + 9, itemY - 16, 3, 30);
+                        }
+                        ctx.fillStyle = active ? colors.accent : colors.muted;
+                        ctx.beginPath();
+                        ctx.arc(x + 28, itemY - 2, 4, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.fillStyle = active ? colors.text : colors.muted;
+                        ctx.font = `700 ${Math.max(10, canvas.height * 0.012)}px Lato, sans-serif`;
+                        ctx.fillText(sidebarItems[(item + region) % sidebarItems.length], x + 42, itemY + 2);
+                    }
+
+                    const contentX = x + canvas.width * 0.16;
+                    ctx.fillStyle = colors.text;
+                    ctx.font = `900 ${Math.max(18, canvas.height * 0.027)}px Lato, sans-serif`;
+                    ctx.fillText(pageTitles[region][page], contentX, titleY);
+
+                    const filterY = pageY + canvas.height * 0.165;
+                    const filters = region === 2 ? ['Type: All', 'Sort: Recently updated', 'New'] : ['All classes', 'Sort by: Recent', 'Filter'];
+                    let filterX = contentX;
+                    ctx.font = `700 ${Math.max(9, canvas.height * 0.011)}px Lato, sans-serif`;
+                    for (let filter = 0; filter < filters.length; filter++) {
+                        const filterW = canvas.width * (filter === 1 ? 0.16 : 0.12);
+                        ctx.fillStyle = colors.header;
+                        ctx.beginPath();
+                        ctx.roundRect(filterX, filterY, filterW, canvas.height * 0.027, 7);
+                        ctx.fill();
+                        ctx.strokeStyle = colors.border;
+                        ctx.stroke();
+                        ctx.fillStyle = colors.text;
+                        ctx.fillText(filters[filter], filterX + 10, filterY + canvas.height * 0.018);
+                        filterX += filterW + 12;
+                    }
+
+                    const cardW = canvas.width * 0.39;
+                    const cardH = canvas.height * 0.12;
+                    const cardPitch = canvas.width * 0.43;
+                    for (let row = 0; row < 5; row++) {
+                        const cardY = pageY + canvas.height * (0.21 + row * 0.15);
+                        for (let column = 0; column < 11; column++) {
+                            const cardX = x + canvas.width * 0.16 + column * cardPitch;
+                            if (cardX + cardW < visibleLeft || cardX > visibleRight) continue;
+                            ctx.fillStyle = colors.panel;
+                            ctx.beginPath();
+                            ctx.roundRect(cardX, cardY, cardW, cardH, 9);
+                            ctx.fill();
+                            ctx.strokeStyle = colors.border;
+                            ctx.lineWidth = 1;
+                            ctx.stroke();
+                            ctx.fillStyle = colors.accent;
+                            ctx.beginPath();
+                            ctx.roundRect(cardX + 12, cardY + 12, 31, 31, 7);
+                            ctx.fill();
+                            ctx.fillStyle = '#ffffff';
+                            ctx.font = `900 ${Math.max(12, canvas.height * 0.019)}px Lato, sans-serif`;
+                            ctx.textAlign = 'center';
+                            ctx.fillText(String((column + row + page) % 9 + 1), cardX + 27.5, cardY + 33);
+                            ctx.textAlign = 'left';
+                            ctx.fillStyle = colors.text;
+                            ctx.font = `900 ${Math.max(11, canvas.height * 0.015)}px Lato, sans-serif`;
+                            ctx.fillText(cardTitles[region][(column + row * 3 + page) % cardTitles[region].length], cardX + 53, cardY + 25);
+                            ctx.fillStyle = colors.muted;
+                            ctx.font = `600 ${Math.max(9, canvas.height * 0.0105)}px Lato, sans-serif`;
+                            ctx.fillText(region === 2 ? 'Updated recently · View details' : 'Course home · Recent activity', cardX + 53, cardY + 43);
+                            ctx.fillStyle = colors.border;
+                            ctx.fillRect(cardX + 14, cardY + cardH - 20, cardW * 0.52, 4);
+                            ctx.fillStyle = colors.secondary;
+                            ctx.fillRect(cardX + 14, cardY + cardH - 20, cardW * (0.12 + ((column + row + page) % 5) * 0.09), 4);
+                            ctx.fillStyle = colors.accent;
+                            ctx.beginPath();
+                            ctx.roundRect(cardX + cardW - 84, cardY + cardH - 31, 70, 19, 6);
+                            ctx.fill();
+                            ctx.fillStyle = '#ffffff';
+                            ctx.font = `900 ${Math.max(8, canvas.height * 0.009)}px Lato, sans-serif`;
+                            ctx.textAlign = 'center';
+                            ctx.fillText(region === 2 ? 'OPEN' : 'VIEW', cardX + cardW - 49, cardY + cardH - 18);
+                            ctx.textAlign = 'left';
+                        }
+                    }
+
+                    ctx.fillStyle = colors.border;
+                    ctx.fillRect(x, pageY + canvas.height - 2, regionWidth, 2);
                 }
-
-                drawWorldRidge(x, regionWidth, worldFloorY - canvas.height * 0.12, canvas.height * 0.35, colors.far, region + 1, 24);
-                drawWorldRidge(x, regionWidth, worldFloorY + canvas.height * 0.08, canvas.height * 0.23, colors.detail, region + 4, 32);
-
-                const ground = ctx.createLinearGradient(0, worldFloorY, 0, worldHeight);
-                ground.addColorStop(0, colors.ground);
-                ground.addColorStop(1, '#17243a');
-                ctx.fillStyle = ground;
-                ctx.fillRect(x, worldFloorY, regionWidth, worldHeight - worldFloorY);
-
-                ctx.fillStyle = colors.accent;
-                ctx.globalAlpha = 0.9;
-                ctx.fillRect(x, worldFloorY - 5, regionWidth, 8);
-                ctx.globalAlpha = 1;
-                ctx.fillStyle = 'rgba(255,255,255,0.13)';
-                for (let tuft = 0; tuft < 52; tuft++) {
-                    const tuftX = x + tuft * (regionWidth / 52);
-                    const tuftY = worldFloorY + 28 + ((tuft * 41 + region * 17) % Math.max(1, Math.round(canvas.height * 0.42)));
-                    ctx.fillRect(tuftX, tuftY, 3 + (tuft % 3), 2);
-                }
-
-                const signY = worldFloorY - canvas.height * 0.24;
-                ctx.fillStyle = 'rgba(20,25,48,0.68)';
-                ctx.beginPath();
-                ctx.roundRect(x + regionWidth / 2 - 132, signY - 42, 264, 58, 18);
-                ctx.fill();
-                ctx.strokeStyle = colors.accent;
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                ctx.fillStyle = '#fff8dc';
-                ctx.font = '900 20px Lato, sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText(WORLD_REGION_NAMES[region], x + regionWidth / 2, signY - 14);
-                ctx.fillStyle = colors.accent;
-                ctx.font = '900 10px Lato, sans-serif';
-                ctx.fillText(`REALM ${region + 1}  ·  ✦`, x + regionWidth / 2, signY + 3);
-            }
-
-            for (const decoration of worldDecorations) {
-                if (decoration.x < visibleLeft || decoration.x > visibleRight) continue;
-                drawWorldDecoration(decoration);
             }
 
             for (const platform of worldPlatforms) {
                 if (platform.x + platform.w < visibleLeft || platform.x > visibleRight ||
                     platform.y + platform.h < worldCameraY - 80 || platform.y > worldCameraY + canvas.height + 80) continue;
-                if (platform.type === 'world-island') {
-                    ctx.fillStyle = 'rgba(18,30,54,0.48)';
-                    ctx.beginPath();
-                    ctx.moveTo(platform.x + 16, platform.y + platform.h - 2);
-                    ctx.lineTo(platform.x + platform.w * 0.28, platform.y + platform.h + 42);
-                    ctx.lineTo(platform.x + platform.w * 0.74, platform.y + platform.h + 34);
-                    ctx.lineTo(platform.x + platform.w - 16, platform.y + platform.h - 2);
-                    ctx.closePath();
-                    ctx.fill();
-                }
-                ctx.fillStyle = platform.color || '#386b43';
+                ctx.save();
+                ctx.shadowColor = 'rgba(20, 32, 48, 0.2)';
+                ctx.shadowBlur = 8;
+                ctx.shadowOffsetY = 3;
+                ctx.fillStyle = platform.color || '#ffffff';
                 ctx.beginPath();
-                ctx.roundRect(platform.x, platform.y, platform.w, platform.h, platform.type === 'world-ground' ? 4 : 9);
+                ctx.roundRect(platform.x, platform.y, platform.w, platform.h, platform.type === 'world-ground' ? 4 : 7);
                 ctx.fill();
-                ctx.fillStyle = platform.accent || '#d9f36a';
-                ctx.fillRect(platform.x + 5, platform.y, Math.max(0, platform.w - 10), platform.type === 'world-ground' ? 5 : 4);
-                if (platform.type === 'world-ledge') {
-                    ctx.fillStyle = 'rgba(255,255,255,0.13)';
-                    ctx.fillRect(platform.x + 14, platform.y + platform.h, platform.w - 28, 4);
-                }
+                ctx.shadowColor = 'transparent';
+                ctx.fillStyle = platform.accent || '#6558c8';
+                ctx.fillRect(platform.x + 5, platform.y, Math.max(0, platform.w - 10), 4);
+                ctx.restore();
             }
 
             for (const landmark of worldLandmarks) {
                 if (landmark.x < visibleLeft || landmark.x > visibleRight) continue;
-                const isWayfinder = landmark === worldLandmarks[worldLandmarks.length - 1];
-                ctx.strokeStyle = landmark.color;
-                ctx.lineWidth = 7;
+                const isHelpDesk = landmark === worldLandmarks[worldLandmarks.length - 1];
+                ctx.fillStyle = '#ffffff';
                 ctx.beginPath();
-                ctx.arc(landmark.x, landmark.y - 46, 34, Math.PI, Math.PI * 2);
-                ctx.stroke();
-                ctx.fillStyle = 'rgba(255,255,255,0.18)';
-                ctx.beginPath();
-                ctx.ellipse(landmark.x, landmark.y - 8, 48, 10, 0, 0, Math.PI * 2);
+                ctx.roundRect(landmark.x - 42, landmark.y - 64, 84, 51, 8);
                 ctx.fill();
-
-                if (isWayfinder) {
-                    ctx.fillStyle = '#6e4da0';
-                    ctx.beginPath();
-                    ctx.roundRect(landmark.x - 9, landmark.y - 24, 18, 24, 7);
-                    ctx.fill();
-                    ctx.fillStyle = '#ffd98a';
-                    ctx.beginPath();
-                    ctx.arc(landmark.x, landmark.y - 29, 8, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = '#27304a';
-                    ctx.fillRect(landmark.x - 3, landmark.y - 30, 1.5, 1.5);
-                    ctx.fillRect(landmark.x + 2, landmark.y - 30, 1.5, 1.5);
-                    ctx.fillStyle = '#fff8dc';
-                    ctx.font = '900 11px Lato, sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('WAYFINDER · E', landmark.x, landmark.y - 72);
-                } else {
-                    ctx.fillStyle = landmark.color;
-                    ctx.font = '900 22px Lato, sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('✦', landmark.x, landmark.y - 38);
-                }
+                ctx.strokeStyle = landmark.color;
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                ctx.fillStyle = landmark.color;
+                ctx.fillRect(landmark.x - 32, landmark.y - 53, 64, 6);
+                ctx.fillStyle = '#d9e2ec';
+                ctx.fillRect(landmark.x - 30, landmark.y - 39, 43, 4);
+                ctx.fillRect(landmark.x - 30, landmark.y - 30, 54, 4);
+                ctx.fillStyle = landmark.color;
+                ctx.beginPath();
+                ctx.roundRect(landmark.x - 29, landmark.y - 13, 58, 17, 5);
+                ctx.fill();
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '900 9px Lato, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(isHelpDesk ? 'HELP DESK · E' : 'OPEN SITE', landmark.x, landmark.y - 1);
             }
 
             for (const fragment of worldFragments) {
                 if (fragment.collected || fragment.x < visibleLeft || fragment.x > visibleRight) continue;
-                const pulse = 11 + Math.sin(performance.now() * 0.004 + fragment.x) * 3;
+                const pulse = 8 + Math.sin(performance.now() * 0.004 + fragment.x) * 2;
                 ctx.save();
                 ctx.shadowColor = fragment.color;
-                ctx.shadowBlur = 24;
+                ctx.shadowBlur = 14;
                 ctx.fillStyle = fragment.color;
                 ctx.beginPath();
-                ctx.moveTo(fragment.x, fragment.y - pulse);
-                ctx.lineTo(fragment.x + pulse * 0.62, fragment.y);
-                ctx.lineTo(fragment.x, fragment.y + pulse);
-                ctx.lineTo(fragment.x - pulse * 0.62, fragment.y);
-                ctx.closePath();
+                ctx.roundRect(fragment.x - 15, fragment.y - 11, 30, 22, 5);
                 ctx.fill();
                 ctx.shadowBlur = 0;
-                ctx.fillStyle = '#fff9df';
-                ctx.beginPath();
-                ctx.arc(fragment.x, fragment.y, 3, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '900 10px Lato, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('★', fragment.x, fragment.y + 4);
                 ctx.restore();
             }
         }
@@ -4724,7 +4641,7 @@
             ctx.font = '700 9px Lato, sans-serif';
             ctx.textAlign = 'left';
             ctx.fillStyle = '#ffffff';
-            ctx.fillText('WORLD MAP', x + 9, y + 10);
+            ctx.fillText('SITE MAP', x + 9, y + 10);
             ctx.restore();
         }
 
