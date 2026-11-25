@@ -1,6 +1,6 @@
 # Super-Class-Bros
 
-Open the secret UCAS button to launch the game. Choose a fighter, stage, and match mode in the HUD; the game includes Canvas, myUVU, and training maps, Smash-style combat, UI Tag, local CPUs/dummies, and multiplayer rooms.
+Open the secret UCAS button to launch the game. Choose a fighter, stage, and match mode in the HUD; the game includes Canvas, myUVU, training, and a generated open-world map, Smash-style combat, UI Tag, Adventure quests, local CPUs/dummies, and multiplayer rooms.
 
 ## Default controls
 
@@ -30,3 +30,4 @@ Tracks are read from `assets/music/`. The game attempts to discover MP3s from a 
 - The myUVU portal stage scrolls vertically to keep the player near the center of the view; manual scrolling is also supported, with a floor at the bottom of the stage.
 - Remote player positions and animation states are synchronized, and Tag/Fight modes use separate room channels.
 - The HUD includes fighter selection, host stage/mode controls, rooms, player customization, and training dummy reset.
+- Choose **Adventure** from the mode picker to explore an open world with five themed regions, collect page fragments, and complete the Archivist quest. The generated world is 10 viewports wide by 5 tall (50 times a normal viewport's area); use **A/D** to explore and **E** near the Archivist to interact. Touch players can use **TALK**.
